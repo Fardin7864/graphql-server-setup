@@ -16,6 +16,8 @@ const server_1 = require("@apollo/server");
 const express4_1 = require("@apollo/server/express4");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const typeDefs_1 = __importDefault(require("./graphql/typeDefs"));
+const resolvers_1 = __importDefault(require("./graphql/resolvers"));
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const app = (0, express_1.default)();
@@ -27,23 +29,11 @@ function startServer() {
         // Use JSON middleware for parsing incoming requests
         app.use(express_1.default.json());
         app.use((0, cors_1.default)({
-            origin: '*', // Adjust this for more restrictive access control in production
+            origin: "*", // Adjust this for more restrictive access control in production
         }));
-        const typeDefs = `
-        type Query {
-            hello: String
-            say(name: String): String
-        }
-    `;
-        const resolvers = {
-            Query: {
-                hello: () => 'Hey there, I am a GraphQL server',
-                say: (_, { name }) => `Hey ${name}, Welcome to GraphQL!`
-            },
-        };
         const server = new server_1.ApolloServer({
-            typeDefs,
-            resolvers,
+            typeDefs: typeDefs_1.default,
+            resolvers: resolvers_1.default,
             introspection: true, // Allow introspection for development environments
         });
         yield server.start();
@@ -56,29 +46,29 @@ function startServer() {
         // Error handling middleware
         app.use((err, req, res, next) => {
             console.error(err.stack);
-            res.status(500).json({ error: 'Something went wrong!' });
+            res.status(500).json({ error: "Something went wrong!" });
         });
         // Start the server
         const httpServer = app.listen(PORT, () => {
             console.log(`🚀 Server is running on http://localhost:${PORT}`);
         });
         // Graceful shutdown
-        process.on('SIGINT', () => {
-            console.log('Received SIGINT. Shutting down gracefully...');
+        process.on("SIGINT", () => {
+            console.log("Received SIGINT. Shutting down gracefully...");
             httpServer.close(() => {
-                console.log('Server closed.');
+                console.log("Server closed.");
                 process.exit(0);
             });
         });
-        process.on('SIGTERM', () => {
-            console.log('Received SIGTERM. Shutting down gracefully...');
+        process.on("SIGTERM", () => {
+            console.log("Received SIGTERM. Shutting down gracefully...");
             httpServer.close(() => {
-                console.log('Server closed.');
+                console.log("Server closed.");
                 process.exit(0);
             });
         });
     });
 }
 startServer().catch((error) => {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
 });
