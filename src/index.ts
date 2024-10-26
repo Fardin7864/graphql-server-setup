@@ -1,10 +1,18 @@
 import { expressMiddleware } from "@apollo/server/express4";
 import express, { Request, Response, NextFunction } from "express";
 import createApolloGraphqlServer from "./graphql";
+import UserService from "./services/user/UserService";
+import cors from "cors"
 
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 8080;
+  const corsOptions = {
+    origin: '*',
+    methods: 'POST',
+    credentials: true,
+};
+app.options('*', cors(corsOptions)); // Preflight request handling
 
   // Use JSON middleware for parsing incoming requests
   app.use(express.json());
@@ -16,7 +24,18 @@ async function startServer() {
 
   try {
     // Initialize Apollo server and set up GraphQL middleware
-    app.use("/graphql", expressMiddleware(await createApolloGraphqlServer()));
+    app.use("/graphql", expressMiddleware(await createApolloGraphqlServer(),{
+      context: async ({ req }) => { 
+        //  @ts-ignore
+        const token = req.headers['token']
+        try {
+          const user = UserService.jwtDecode(token as string);
+          return { user };
+        } catch (error) {
+          return {};
+        }
+       }
+    }));
   } catch (error) {
     console.error("Failed to initialize Apollo Server:", error);
     process.exit(1);

@@ -15,10 +15,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express4_1 = require("@apollo/server/express4");
 const express_1 = __importDefault(require("express"));
 const graphql_1 = __importDefault(require("./graphql"));
+const UserService_1 = __importDefault(require("./services/user/UserService"));
+const cors_1 = __importDefault(require("cors"));
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const app = (0, express_1.default)();
         const PORT = Number(process.env.PORT) || 8080;
+        const corsOptions = {
+            origin: '*',
+            methods: 'POST',
+            credentials: true,
+        };
+        app.options('*', (0, cors_1.default)(corsOptions)); // Preflight request handling
         // Use JSON middleware for parsing incoming requests
         app.use(express_1.default.json());
         // Health check route
@@ -27,7 +35,19 @@ function startServer() {
         });
         try {
             // Initialize Apollo server and set up GraphQL middleware
-            app.use("/graphql", (0, express4_1.expressMiddleware)(yield (0, graphql_1.default)()));
+            app.use("/graphql", (0, express4_1.expressMiddleware)(yield (0, graphql_1.default)(), {
+                context: (_a) => __awaiter(this, [_a], void 0, function* ({ req }) {
+                    //  @ts-ignore
+                    const token = req.headers['token'];
+                    try {
+                        const user = UserService_1.default.jwtDecode(token);
+                        return { user };
+                    }
+                    catch (error) {
+                        return {};
+                    }
+                })
+            }));
         }
         catch (error) {
             console.error("Failed to initialize Apollo Server:", error);

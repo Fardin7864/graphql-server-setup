@@ -9,14 +9,18 @@ type Query {
 
   type CreateUserResponse {
     success: Boolean!
-    status: Number!
+    status: Int!
     message: String!
+    accessToken: String
     user: User
-  }
+}
 
   type User {
     firstName: String!
     lastName: String!
     email: String!
+    profileImageURL: String
   }
+
+
 `
