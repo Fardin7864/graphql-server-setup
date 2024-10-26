@@ -17,11 +17,11 @@ export interface GetUserTokenPayload {
 }
 
 export interface User {
-    id: string;
-    firstName: string;
-    lastName?: string;
-    email: string;
-    profileImageURL: string;
+  id: string;
+  firstName: string;
+  lastName?: string;
+  email: string;
+  profileImageURL: string;
 }
 
 class UserService {
@@ -32,26 +32,114 @@ class UserService {
     return hashedPassword;
   }
 
+  // Private method for required fields validation
+  private static validateRequiredFields(fields: Record<string, any>): {
+    isValid: boolean;
+    errorMessage: string;
+  } {
+    const missingFields = Object.entries(fields)
+      .filter(([_, value]) => !value) // Check if value is falsy
+      .map(([key]) => key); // Extract keys of missing fields
+
+    if (missingFields.length > 0) {
+      return {
+        isValid: false,
+        errorMessage: `Missing required fields: ${missingFields.join(", ")}`,
+      };
+    }
+
+    return { isValid: true, errorMessage: "" }; // All required fields are present
+  }
+
+  // Private method for password validation
+  private static isValidPassword(password: string): {
+    isValid: boolean;
+    errorMessage: string;
+  } {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      return {
+        isValid: false,
+        errorMessage: "Password must be at least 8 characters long.",
+      };
+    }
+    if (!hasUpperCase) {
+      return {
+        isValid: false,
+        errorMessage: "Password must include at least one uppercase letter.",
+      };
+    }
+    if (!hasLowerCase) {
+      return {
+        isValid: false,
+        errorMessage: "Password must include at least one lowercase letter.",
+      };
+    }
+    if (!hasNumber) {
+      return {
+        isValid: false,
+        errorMessage: "Password must include at least one number.",
+      };
+    }
+    if (!hasSymbol) {
+      return {
+        isValid: false,
+        errorMessage: "Password must include at least one special character.",
+      };
+    }
+
+    return { isValid: true, errorMessage: "" }; // Valid password
+  }
+
   public static async createUser(payload: CreateUserPayload) {
     const { firstName, lastName, email, password } = payload;
+
+    // Validate required fields
+    const requiredFieldsValidation = this.validateRequiredFields({
+      firstName,
+      email,
+      password,
+    });
+    if (!requiredFieldsValidation.isValid) {
+      return {
+        success: false,
+        status: 400,
+        message: requiredFieldsValidation.errorMessage,
+      };
+    }
+
+    // Validate the password
+    const passwordValidation = this.isValidPassword(password);
+    if (!passwordValidation.isValid) {
+      return {
+        success: false,
+        status: 400,
+        message: passwordValidation.errorMessage,
+      };
+    }
     const salt = randomBytes(32).toString("hex");
-    const hashPassword = UserService.generateHash(salt, password); 
+    const hashPassword = UserService.generateHash(salt, password);
     const user = await prismaClient.user.create({
       data: {
         firstName,
         lastName,
         email,
         salt,
-        password: hashPassword, 
+        password: hashPassword,
       },
     });
     const token = JWT.sign({ id: user.id, email: user.email }, JWT_SECRET);
     return {
-        success: true,
-        status: 201,
-        message: "Register successfull!",
-        accessToken: token,
-        user
+      success: true,
+      status: 201,
+      message: "Register successfull!",
+      accessToken: token,
+      user,
     };
   }
 
@@ -68,40 +156,40 @@ class UserService {
     const user = await UserService.getUserByEmail(email);
 
     if (!user) {
-        return {
-            success: false,
-            status: 404,
-            message: "User not found",
-            accessToken: null,
-            user: null
-        };
+      return {
+        success: false,
+        status: 404,
+        message: "User not found",
+        accessToken: null,
+        user: null,
+      };
     }
 
     const userSalt = user.salt;
     const userHashPassword = UserService.generateHash(userSalt, password);
 
     if (userHashPassword !== user.password) {
-        return {
-            success: false,
-            status: 401,
-            message: "Incorrect password",
-            accessToken: null,
-            user: null
-        };
+      return {
+        success: false,
+        status: 401,
+        message: "Incorrect password",
+        accessToken: null,
+        user: null,
+      };
     }
 
     const token = JWT.sign({ id: user.id, email: user.email }, JWT_SECRET);
     return {
-        success: true,
-        status: 200,
-        message: "Login successful",
-        accessToken: token,
-        user: {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            profileImageURL: user.profileImageURL,
-        }
+      success: true,
+      status: 200,
+      message: "Login successful",
+      accessToken: token,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profileImageURL: user.profileImageURL,
+      },
     };
   }
 
