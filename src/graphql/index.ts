@@ -17,10 +17,10 @@ async function createApolloGraphqlServer() {
     `, //Schema
     resolvers: {
         Query: {
-            ...User.resolvers.queries,
+            ...User.resolvers.query,
         },
         Mutation: {
-            ...User.resolvers.mutations,
+            ...User.resolvers.mutation,
         },
     }
   });

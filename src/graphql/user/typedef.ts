@@ -1,7 +1,6 @@
 export const typeDefs = `#graphql
 type Query {
     hello: String
-    say(name: String): String
   }
 
   type Mutation {
@@ -10,6 +9,7 @@ type Query {
 
   type CreateUserResponse {
     success: Boolean!
+    status: Number!
     message: String!
     user: User
   }
