@@ -17,28 +17,44 @@ const express_1 = __importDefault(require("express"));
 const graphql_1 = __importDefault(require("./graphql"));
 const UserService_1 = __importDefault(require("./services/user/UserService"));
 const cors_1 = __importDefault(require("cors"));
+const SendEmail_1 = require("./utils/emailServices/SendEmail");
+const SendOtpText_1 = require("./utils/OTP/SendOtpText");
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const app = (0, express_1.default)();
         const PORT = Number(process.env.PORT) || 8080;
         const corsOptions = {
-            origin: '*',
-            methods: 'POST',
+            origin: "*",
+            methods: "POST",
             credentials: true,
         };
-        app.options('*', (0, cors_1.default)(corsOptions)); // Preflight request handling
+        app.options("*", (0, cors_1.default)(corsOptions)); // Preflight request handling
         // Use JSON middleware for parsing incoming requests
         app.use(express_1.default.json());
         // Health check route
         app.get("/", (req, res) => {
             res.json({ message: "Server is running" });
         });
+        app.get("/email", (req, res) => {
+            // Example usage
+            (0, SendEmail_1.sendEmail)("info.dubet@gmail.com", "Your OTP Code", "Your OTP code is: 123456")
+                .then(console.log)
+                .catch(console.error);
+            return;
+        });
+        app.get("/otp", (req, res) => {
+            // Example usage
+            (0, SendOtpText_1.sendOtp)("+8801885482244")
+                .then((otp) => console.log(`OTP: ${otp}`))
+                .catch(console.error);
+            return;
+        });
         try {
             // Initialize Apollo server and set up GraphQL middleware
             app.use("/graphql", (0, express4_1.expressMiddleware)(yield (0, graphql_1.default)(), {
                 context: (_a) => __awaiter(this, [_a], void 0, function* ({ req }) {
                     //  @ts-ignore
-                    const token = req.headers['token'];
+                    const token = req.headers["token"];
                     try {
                         const user = UserService_1.default.jwtDecode(token);
                         return { user };
@@ -46,7 +62,7 @@ function startServer() {
                     catch (error) {
                         return {};
                     }
-                })
+                }),
             }));
         }
         catch (error) {
