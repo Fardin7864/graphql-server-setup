@@ -99,6 +99,16 @@ class UserService {
   public static async createUser(payload: CreateUserPayload) {
     const { firstName, lastName, email, password } = payload;
 
+    const isExist = await prismaClient.user.findUnique({where: {email}});
+    if(isExist){
+      return {
+        success: false,
+        status: 400,
+        message: "Register Faild!",
+        details: "This email address already exist!",
+      };
+    }
+
     // Validate required fields
     const requiredFieldsValidation = this.validateRequiredFields({
       firstName,
@@ -134,6 +144,13 @@ class UserService {
       },
     });
     const token = JWT.sign({ id: user.id, email: user.email }, JWT_SECRET);
+    if(!user){
+      return {
+        success: false,
+        status: 400,
+        message: "Register Faild!",
+      };
+    }
     return {
       success: true,
       status: 201,

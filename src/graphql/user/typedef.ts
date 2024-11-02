@@ -11,6 +11,7 @@ type Query {
     success: Boolean!
     status: Int!
     message: String!
+    details: String
     accessToken: String
     user: User
 }
