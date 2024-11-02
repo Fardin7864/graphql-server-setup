@@ -1,14 +1,10 @@
 import tls, { ConnectionOptions, TLSSocket } from 'tls';
 
-
-const SMTP_SERVER = process.env.SMTP_SERVER;
+const SMTP_SERVER = process.env.SMTP_SERVER ?? '';
 const SMTP_PORT = Number(process.env.SMTP_PORT);
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_USER = process.env.EMAIL_USER ?? '';
+const EMAIL_PASS = process.env.EMAIL_PASS ?? '';
 
-/**
- * Sends a command to the SMTP server and waits for the response.
- */
 function sendCommand(socket: TLSSocket, command: string): Promise<string> {
   return new Promise((resolve, reject) => {
     socket.write(command + '\r\n');
@@ -21,9 +17,6 @@ function sendCommand(socket: TLSSocket, command: string): Promise<string> {
   });
 }
 
-/**
- * Sends an email using raw SMTP commands over TLS.
- */
 export async function sendEmail(to: string, subject: string, message: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const options: ConnectionOptions = {
@@ -34,20 +27,18 @@ export async function sendEmail(to: string, subject: string, message: string): P
 
     const socket = tls.connect(options, async () => {
       try {
-        // Handle the initial 220 response from the server
         let response = await sendCommand(socket, '');
 
-        // Send EHLO command to start the SMTP conversation
         response = await sendCommand(socket, `EHLO ${SMTP_SERVER}`);
         if (!response.includes('250')) throw new Error('EHLO failed');
 
         response = await sendCommand(socket, `AUTH LOGIN`);
         if (!response.includes('334')) throw new Error('AUTH LOGIN failed');
 
-        response = await sendCommand(socket, Buffer.from(EMAIL_USER).toString('base64'));
+        response = await sendCommand(socket, Buffer.from(EMAIL_USER, 'utf-8').toString('base64'));
         if (!response.includes('334')) throw new Error('Username failed');
 
-        response = await sendCommand(socket, Buffer.from(EMAIL_PASS).toString('base64'));
+        response = await sendCommand(socket, Buffer.from(EMAIL_PASS, 'utf-8').toString('base64'));
         if (!response.includes('235')) throw new Error('Password failed');
 
         response = await sendCommand(socket, `MAIL FROM:<${EMAIL_USER}>`);
@@ -59,7 +50,6 @@ export async function sendEmail(to: string, subject: string, message: string): P
         response = await sendCommand(socket, `DATA`);
         if (!response.includes('354')) throw new Error('DATA command failed');
 
-        // Construct email headers and body
         const emailBody = `Subject: ${subject}\r\nFrom: ${EMAIL_USER}\r\nTo: ${to}\r\n\r\n${message}\r\n.\r\n`;
         response = await sendCommand(socket, emailBody);
         if (!response.includes('250')) throw new Error('Message body failed');
