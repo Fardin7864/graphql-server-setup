@@ -1,10 +1,10 @@
 import tls, { ConnectionOptions, TLSSocket } from 'tls';
 
 
-const SMTP_SERVER = process.env.SMTP_SERVER || 'smtp.gmail.com';
-const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
-const EMAIL_USER = process.env.EMAIL_USER || '';
-const EMAIL_PASS = process.env.EMAIL_PASS || '';
+const SMTP_SERVER = process.env.SMTP_SERVER;
+const SMTP_PORT = Number(process.env.SMTP_PORT);
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
 /**
  * Sends a command to the SMTP server and waits for the response.
