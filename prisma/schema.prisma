@@ -15,11 +15,22 @@ datasource db {
 
 model User {
   id String @id @default(uuid())
+  userId String? @unique
   firstName String @map("first_name")
   lastName String? @map("last_name")
   profileImageURL String? @map("profile_img_url")
-  email String @unique
-  password String
+  mobile String?
+  currency Currency @default(USD)
+  promoCode String?
+  email String? @unique
+  password String?
   salt String
+  iv String
   @@map("users")
+}
+
+enum Currency {
+  USD
+  BDT
+  INR
 }

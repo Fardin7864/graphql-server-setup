@@ -1,14 +1,23 @@
-import { createHmac, randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+} from "crypto";
 import JWT from "jsonwebtoken";
 import { prismaClient } from "../../lib/db";
+import { Currency } from "@prisma/client";
 
 const JWT_SECRET = "$supperScript";
 
 export interface CreateUserPayload {
   firstName: string;
   lastName?: string;
-  email: string;
-  password: string;
+  profileImageURL?: string;
+  email?: string;
+  password?: string;
+  promoCode?: string;
+  currency: Currency;
 }
 
 export interface GetUserTokenPayload {
@@ -18,20 +27,95 @@ export interface GetUserTokenPayload {
 
 export interface User {
   id: string;
+  userId: string;
   firstName: string;
   lastName?: string;
-  email: string;
-  profileImageURL: string;
+  profileImageURL?: string;
+  email?: string;
+  password?: string;
+  promoCode?: string;
+  currency: Currency;
+}
+
+class PasswordGenerator {
+  private lowercase = "abcdefghijklmnopqrstuvwxyz";
+  private uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  private numbers = "0123456789";
+  private symbols = "!@#$%^&*()_+[]{}|;:,.<>?";
+
+  // Method to generate a strong password
+  public generatePassword(length: number = 12): string {
+    const getRandom = (chars: string) =>
+      chars[Math.floor(Math.random() * chars.length)];
+
+    // Ensure password has at least one of each required character type
+    const passwordChars = [
+      getRandom(this.lowercase),
+      getRandom(this.uppercase),
+      getRandom(this.numbers),
+      getRandom(this.symbols),
+    ];
+
+    // Fill the remaining length with random characters from all types
+    const allChars =
+      this.lowercase + this.uppercase + this.numbers + this.symbols;
+    for (let i = passwordChars.length; i < length; i++) {
+      passwordChars.push(getRandom(allChars));
+    }
+
+    // Shuffle the characters to ensure randomness
+    return passwordChars.sort(() => Math.random() - 0.5).join("");
+  }
 }
 
 class UserService {
+  // Encode parameters with salt as the encryption key and take IV as a parameter
+  public static encodeParams(
+    salt: string,
+    iv: string,
+    ...params: string[]
+  ): string {
+    const concatenatedParams = params.join("|");
+
+    // Convert the salt to a 256-bit key and the IV to a Buffer
+    const key = Buffer.from(salt, "hex").slice(0, 32); // Ensure key is 256-bit (32 bytes)
+    const ivBuffer = Buffer.from(iv, "hex");
+
+    const cipher = createCipheriv("aes-256-cbc", key, ivBuffer);
+
+    // Encrypt and get the result in hexadecimal
+    let encrypted = cipher.update(concatenatedParams, "utf8", "hex");
+    encrypted += cipher.final("hex");
+
+    // Return just the encrypted data; IV will be stored separately
+    return encrypted;
+  }
+
+  // Decode the encoded string using salt as the decryption key and take IV as a parameter
+  public static decodeParams(
+    salt: string,
+    iv: string,
+    encodedString: string
+  ): string {
+    // Convert the salt to a 256-bit key and the IV to a Buffer
+    const key = Buffer.from(salt, "hex").slice(0, 32); // Ensure key is 256-bit (32 bytes)
+    const ivBuffer = Buffer.from(iv, "hex");
+
+    const decipher = createDecipheriv("aes-256-cbc", key, ivBuffer);
+
+    // Decrypt the encrypted text
+    let decrypted = decipher.update(encodedString, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
+  }
+
   private static generateHash(salt: string, password: string) {
     const hashedPassword = createHmac("sha256", salt) // Corrected "sha256" here
       .update(password)
       .digest("hex");
     return hashedPassword;
   }
-
   // Private method for required fields validation
   private static validateRequiredFields(fields: Record<string, any>): {
     isValid: boolean;
@@ -97,10 +181,12 @@ class UserService {
   }
 
   public static async createUser(payload: CreateUserPayload) {
-    const { firstName, lastName, email, password } = payload;
+    const { firstName, lastName, email } = payload;
+    const password = payload.password || new PasswordGenerator().generatePassword(12); // Generate a default password if undefined
 
-    const isExist = await prismaClient.user.findUnique({where: {email}});
-    if(isExist){
+
+    const isExist = await prismaClient.user.findUnique({ where: { email } });
+    if (isExist) {
       return {
         success: false,
         status: 400,
@@ -133,6 +219,7 @@ class UserService {
       };
     }
     const salt = randomBytes(32).toString("hex");
+    const iv = randomBytes(16).toString("hex");
     const hashPassword = UserService.generateHash(salt, password);
     const user = await prismaClient.user.create({
       data: {
@@ -140,11 +227,12 @@ class UserService {
         lastName,
         email,
         salt,
+        iv,
         password: hashPassword,
       },
     });
     const token = JWT.sign({ id: user.id, email: user.email }, JWT_SECRET);
-    if(!user){
+    if (!user) {
       return {
         success: false,
         status: 400,
@@ -216,6 +304,65 @@ class UserService {
 
   public static async getAllUsers() {
     return prismaClient.user.findMany();
+  }
+
+  // One Click register
+  public static async oneClickRegister(payload: CreateUserPayload) {
+    const { firstName, lastName, currency } = payload;
+
+    const salt = randomBytes(32).toString("hex");
+    const iv = randomBytes(16).toString("hex");
+    const userId = this.encodeParams(salt, iv, firstName, currency);
+
+    // Create password
+    const generator = new PasswordGenerator();
+    const password = generator.generatePassword(12);
+    const hashPassword = UserService.generateHash(salt, password);
+
+
+    // Validate required fields
+    const requiredFieldsValidation = this.validateRequiredFields({
+      firstName,
+      lastName,
+      currency,
+    });
+    if (!requiredFieldsValidation.isValid) {
+      return {
+        success: false,
+        status: 400,
+        message: requiredFieldsValidation.errorMessage,
+      };
+    }
+
+    const user = await prismaClient.user.create({
+      data: {
+        userId,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        currency: payload.currency,
+        salt,
+        iv,
+        password: hashPassword,
+      },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        status: 400,
+        message: "Faild to create user on one click!",
+      };
+    }
+
+    return {
+      success: true,
+      status: 201,
+      message: "User created successfully in one click!",
+      data:{
+        userId,
+        password
+      }
+    };
   }
 }
 

@@ -1,10 +1,28 @@
 export const typeDefs = `#graphql
-type Query {
+  enum Currency {
+    USD
+    BDT
+    INR
+  }
+
+  type Query {
     hello: String
   }
 
   type Mutation {
-    createUser(firstName: String!, lastName: String!, email: String!, password: String!): CreateUserResponse
+    createUser(
+      firstName: String!
+      lastName: String!
+      email: String!
+      password: String!
+      currency: Currency!
+    ): CreateUserResponse
+
+    registerOnOneclick(
+      firstName: String!
+      lastName: String!
+      currency: Currency!
+    ): OneClickRegisterResponse
   }
 
   type CreateUserResponse {
@@ -14,14 +32,29 @@ type Query {
     details: String
     accessToken: String
     user: User
-}
-
-  type User {
-    firstName: String!
-    lastName: String!
-    email: String!
-    profileImageURL: String
   }
 
+  type OneClickRegisterResponse {
+    success: Boolean!
+    status: Int!
+    message: String!
+    details: String
+    data: OneClickUserData
+  }
 
-`
+  type OneClickUserData {
+    userId: String!
+    password: String!
+  }
+
+  type User {
+    userId: String
+    firstName: String!
+    lastName: String
+    profileImageURL: String
+    mobile: String
+    currency: Currency
+    promoCode: String
+    email: String
+  }
+`;

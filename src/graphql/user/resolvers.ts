@@ -1,4 +1,5 @@
-import UserService, { CreateUserPayload } from "../../services/user/UserService";
+import { Currency } from "@prisma/client";
+import UserService from "../../services/user/UserService";
 
 const query = {
   // Get all users
@@ -36,9 +37,9 @@ const query = {
 };
 
 const mutation = {
-  createUser: async (_: any, { firstName, lastName, email, password }: { firstName: string; lastName: string; email: string; password: string }) => {
+  createUser: async (_: any, { firstName, lastName, email, password, currency }: { firstName: string; lastName: string; email: string; password: string; currency: Currency }) => {
     try {
-      const user = await UserService.createUser({ firstName, lastName, email, password });
+      const user = await UserService.createUser({ firstName, lastName, email, password, currency });
       return user;
     } catch (error) {
       return {
@@ -49,6 +50,19 @@ const mutation = {
       };
     }
   },
+  registerOnOneclick: async (_: any, {firstName, lastName, currency}: { firstName: string; lastName: string; currency: Currency}) => {
+    try {
+      const user = await UserService.oneClickRegister({firstName, lastName, currency});
+      return user;
+    } catch (error) {
+      return {
+        success: false,
+        status: 500,
+        message: "Failed to create user on one click!",
+        user: null,
+      };
+    }
+  }
 };
 
 export const resolvers = { query, mutation };
