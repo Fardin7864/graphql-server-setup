@@ -1,10 +1,10 @@
 import { expressMiddleware } from "@apollo/server/express4";
 import express, { Request, Response, NextFunction } from "express";
 import createApolloGraphqlServer from "./graphql";
-import UserService from "./services/user/UserService";
 import cors from "cors";
 import { sendEmail } from "./utils/emailServices/SendEmail";
 import { sendOtp } from "./utils/OTP/SendOtpText";
+import { TokenUtils } from "./services/user/utils/token";
 
 async function startServer() {
   const app = express();
@@ -55,7 +55,7 @@ async function startServer() {
           //  @ts-ignore
           const token = req.headers["token"];
           try {
-            const user = UserService.jwtDecode(token as string);
+            const user = TokenUtils.decodeToken(token as string);
             return { user };
           } catch (error) {
             return {};

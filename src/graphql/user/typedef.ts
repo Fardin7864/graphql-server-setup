@@ -9,21 +9,21 @@ export const typeDefs = `#graphql
     hello: String
   }
 
-  type Mutation {
-    createUser(
-      firstName: String!
-      lastName: String!
-      email: String!
-      password: String!
-      currency: Currency!
-    ): CreateUserResponse
+  # type Mutation {
+  #   createUser(
+  #     firstName: String!
+  #     lastName: String!
+  #     email: String!
+  #     password: String!
+  #     currency: Currency!
+  #   ): CreateUserResponse
 
-    registerOnOneclick(
-      firstName: String!
-      lastName: String!
-      currency: Currency!
-    ): OneClickRegisterResponse
-  }
+  #   registerOnOneclick(
+  #     firstName: String!
+  #     lastName: String!
+  #     currency: Currency!
+  #   ): OneClickRegisterResponse
+  # }
 
   type CreateUserResponse {
     success: Boolean!
@@ -31,7 +31,7 @@ export const typeDefs = `#graphql
     message: String!
     details: String
     accessToken: String
-    user: User
+    data: User
   }
 
   type OneClickRegisterResponse {
@@ -48,6 +48,7 @@ export const typeDefs = `#graphql
   }
 
   type User {
+    id: String
     userId: String
     firstName: String!
     lastName: String

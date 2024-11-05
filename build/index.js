@@ -15,10 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express4_1 = require("@apollo/server/express4");
 const express_1 = __importDefault(require("express"));
 const graphql_1 = __importDefault(require("./graphql"));
-const UserService_1 = __importDefault(require("./services/user/UserService"));
 const cors_1 = __importDefault(require("cors"));
 const SendEmail_1 = require("./utils/emailServices/SendEmail");
 const SendOtpText_1 = require("./utils/OTP/SendOtpText");
+const token_1 = require("./services/user/utils/token");
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         const app = (0, express_1.default)();
@@ -56,7 +56,7 @@ function startServer() {
                     //  @ts-ignore
                     const token = req.headers["token"];
                     try {
-                        const user = UserService_1.default.jwtDecode(token);
+                        const user = token_1.TokenUtils.decodeToken(token);
                         return { user };
                     }
                     catch (error) {

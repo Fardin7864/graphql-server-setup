@@ -1,45 +1,49 @@
 import { Currency } from "@prisma/client";
-import UserService from "../../services/user/UserService";
+import { AuthService } from "../../services/user/services/authService";
 
 const query = {
-  // Get all users
-  getAllUsers: async () => { 
-    try {
-      const users = await UserService.getAllUsers();
-      if(!users)
-        throw new Error("No user found")
-
-      return users;
-    } catch (error) {
-      console.log(error)
-    }
-   },
-
   // Get authentication token
-  login: async (_: any, payload: { email: string, password: string }) => {
-    const token = await UserService.login({
+  login: async (_: any, payload: { email: string; password: string }) => {
+    const token = await AuthService.login({
       email: payload.email,
       password: payload.password,
     });
     return token;
   },
-  
-  // Get logedin user
-  getCurrentLoggedInUser: async (_: any, paramet: any, context: any) => { 
-     
-    if(context && context.user) {
-      const id = context.user.id;
-      const user = await UserService.getUserById(id)
-      return user;
-    }
-    throw new Error("I don't know")
-   }
+
 };
 
 const mutation = {
-  createUser: async (_: any, { firstName, lastName, email, password, currency }: { firstName: string; lastName: string; email: string; password: string; currency: Currency }) => {
+  registerWithEmail: async (
+    _: any,
+    {
+      firstName,
+      lastName,
+      currency,
+      email,
+      password,
+      promoCode,
+      mobile,
+    }: {
+      firstName: string;
+      lastName: string;
+      currency: Currency;
+      email: string;
+      password: string;
+      promoCode: string;
+      mobile: string;
+    }
+  ) => {
     try {
-      const user = await UserService.createUser({ firstName, lastName, email, password, currency });
+      const user = await AuthService.registerWithEmail({
+        firstName,
+        lastName,
+        currency,
+        email,
+        password,
+        promoCode,
+        mobile,
+      });
       return user;
     } catch (error) {
       return {
@@ -50,9 +54,20 @@ const mutation = {
       };
     }
   },
-  registerOnOneclick: async (_: any, {firstName, lastName, currency}: { firstName: string; lastName: string; currency: Currency}) => {
+  registerOnOneclick: async (
+    _: any,
+    {
+      firstName,
+      lastName,
+      currency,
+    }: { firstName: string; lastName: string; currency: Currency }
+  ) => {
     try {
-      const user = await UserService.oneClickRegister({firstName, lastName, currency});
+      const user = await AuthService.oneClickRegister({
+        firstName,
+        lastName,
+        currency,
+      });
       return user;
     } catch (error) {
       return {
@@ -62,7 +77,7 @@ const mutation = {
         user: null,
       };
     }
-  }
+  },
 };
 
 export const resolvers = { query, mutation };

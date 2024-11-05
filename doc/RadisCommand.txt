@@ -1,0 +1,113 @@
+
+
+## Redis setup in docker 
+
+Step 2: Create a docker-compose.yml File
+Inside your project directory, create a file named docker-compose.yml:
+
+
+touch docker-compose.yml
+Open docker-compose.yml in your preferred editor and paste the following content:
+
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: gamingDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+Step 3: Verify Your Docker and Docker Compose Installation
+Make sure Docker is installed and running on your machine. You can check by running:
+
+
+docker --version
+Check if Docker Compose is installed:
+
+
+docker-compose --version
+If you don’t have Docker or Docker Compose, you can download Docker Desktop from Docker’s website.
+
+Step 4: Start the Containers with Docker Compose
+In your terminal, navigate to your project directory (where docker-compose.yml is located).
+
+Run the following command to start both PostgreSQL and Redis:
+
+
+docker-compose up -d
+The -d flag runs the containers in the background. Docker Compose will pull the images (if not already downloaded) and start both PostgreSQL and Redis containers.
+
+Verify the containers are running:
+
+
+docker-compose ps
+Step 5: Test the Connections
+Connecting to PostgreSQL
+You can connect to the PostgreSQL database using a tool like psql (PostgreSQL’s command-line tool) or a GUI client like DBeaver or pgAdmin. Use the following credentials:
+
+Host: localhost
+Port: 5432
+Database: gamingDb
+User: postgres
+Password: root
+Alternatively, you can connect to the PostgreSQL container from your terminal:
+
+
+docker exec -it postgres_db psql -U postgres -d gamingDb
+Connecting to Redis
+You can use redis-cli to interact with Redis by running the following command:
+
+
+docker exec -it redis_container redis-cli
+Inside the Redis CLI, test the connection by running:
+
+
+ping
+You should see a PONG response if Redis is working correctly.
+
+Step 6: Configure Your Application to Connect to PostgreSQL and Redis
+In your application, use the following configurations to connect:
+
+PostgreSQL (using Prisma or another ORM):
+javasc
+// Example connection URL in an environment file or config
+DATABASE_URL="postgresql://postgres:root@localhost:5432/gamingDb"
+Redis:
+javasc
+import { createClient } from "redis";
+
+const redisClient = createClient({
+  url: "redis://127.0.0.1:6379",
+});
+
+redisClient.on("error", (err) => console.error("Redis Client Error", err));
+
+(async () => {
+  await redisClient.connect();
+})();
+Step 7: Stop the Containers (When Needed)
+To stop the containers, you can run:
+
+
+docker-compose down
+This command stops and removes all containers, networks, and volumes defined in the docker-compose.yml file.
